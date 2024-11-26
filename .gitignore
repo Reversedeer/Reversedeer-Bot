@@ -1,0 +1,28 @@
+# ----- Project -----
+
+### VisualStudioCode ###
+.vscode/*
+
+
+# Environments
+.env
+.env.*
+
+#Packages
+data/
+
+#Ruff
+.ruff_cache
+
+#toml
+ruff.toml
+
+#json
+api.json
+status.json
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+_pycache__/
+*.py[cod]
+*$py.class

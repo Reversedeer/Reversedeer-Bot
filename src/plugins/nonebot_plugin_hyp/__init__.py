@@ -5,7 +5,7 @@ from nonebot.plugin import on_command
 
 # from nonebot import require
 from .handle import hyp
-from .utils import utils
+from .utils import utils, Config
 
 # require('nonebot_plugin_localstore')
 
@@ -52,11 +52,12 @@ __plugin_meta__ = PluginMetadata(
 	description='查询hypixel游戏数据插件',
 	usage=utils.usage,
 	type='application',
+	config=Config,
 	homepage='https://github.com/Reversedeer/nonebot_plugin_hyp',
 	supported_adapters={'~onebot.v11'},
 	extra={
 		'author': 'Reversedeer',
-		'version': '0.0.1',
+		'version': '0.0.2',
 		'priority': 10,
 		'email': 'ysjvillmark@gmail.com',
 	},

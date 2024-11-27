@@ -7,11 +7,11 @@ class Message:
 		data, data_a, online
 	) -> str:
 		"""构建/hyp回复消息"""
-		error = data.get('e')
+		error: str = data.get('e')
 		if error:
 			return error
 		else:
-			msg = (
+			msg: str = (
 				f"{data['rank']} {data_a['displayname']} 的Hypixel信息:\n"
 				f"等级: {data['level']} | 人品: {data['karma']}\n"
 				f"在线情况: {online} | 成就点数: {data['achievementPoints']}\n"
@@ -29,8 +29,9 @@ class Message:
 	@staticmethod
 	async def send_apikey_msg(
 		hyp_apikey, ant_apikey
-	):
-		msg = (
+	) -> str:
+		"""构建/apikay回复消息"""
+		msg: str = (
 			f'当前API信息如下:\n'
 			f'hypixel-apikey: {hyp_apikey}\n'
 			f'- - - - - - - - - - - - - - - - - - - - - - '
@@ -42,11 +43,11 @@ class Message:
 	@staticmethod
 	async def send_mc_msg(data):
 		"""构建/mc回复消息"""
-		error = data.get('e')
+		error: str = data.get('e')
 		if error:
 			return error
 		else:
-			msg = (
+			msg: str = (
 				f"ID: {data['name']}\n"
 				f"UUID: {data['id']}"
 			)
@@ -57,11 +58,11 @@ class Message:
 		data, data_a, rank
 	) -> str:
 		"""构建/bw回复消息"""
-		error = data.get('e')
+		error: str = data.get('e')
 		if error:
 			return error
 		else:
-			msg = (
+			msg: str = (
 				f"[{data['bw_level']}] {rank} {data_a['displayname']} 的起床战争数据:\n"
 				f"经验: {data['bw_experience']} | 硬币: {data['bw_coin']} | 连胜: {data['winstreak']}\n"
 				f"拆床: {data['break_bed']} | 被拆床: {data['lost_bed']} | BBLR: {data['BBLR']}\n"
@@ -78,11 +79,11 @@ class Message:
 		data, data_a, rank
 	) -> str:
 		"""构建/sw回复消息"""
-		error = data.get('e')
+		error: str = data.get('e')
 		if error:
 			return error
 		else:
-			msg = (
+			msg: str = (
 				f"[{data['sw_level']}] {rank} {data_a['displayname']}的空岛战争数据：\n"
 				f"经验: {data['sw_experience']} | 硬币:{data['sw_coins']} | 代币:{data['sw_cosmetic_tokens']}\n"
 				f"胜场: {data['sw_wins']} | 败场: {data['sw_losses']} | W/L: {data['SW_W_L']}\n"

@@ -6,8 +6,11 @@ import asyncio
 
 from nonebot.log import logger
 from typing import Literal, Dict, Union
+from nonebot import get_plugin_config
 
-from .utils import utils
+from .utils import Config
+
+plugin_config = get_plugin_config(Config)
 
 
 class Api:
@@ -62,9 +65,9 @@ class Api:
 				async with (
 					httpx.AsyncClient() as client
 				):
-					uuid = mcdata.get('id')
-					apikey = utils.hypixel_apikey
-					url = self.hypixel_player.format(
+					uuid: int = mcdata.get('id')
+					apikey: str = plugin_config.hypixel_apikey
+					url: str = self.hypixel_player.format(
 						apikey, uuid
 					)
 					res: httpx.Response = (
@@ -118,10 +121,8 @@ class Api:
 					httpx.AsyncClient() as client
 				):
 					uuid: int = mcdata.get('id')
-					apikey: int = (
-						utils.hypixel_apikey
-					)
-					url = self.hypixel_status.format(
+					apikey: str = plugin_config.hypixel_apikey
+					url: str = self.hypixel_status.format(
 						apikey, uuid
 					)
 					res: httpx.Response = (
@@ -160,16 +161,19 @@ class Api:
 			'e': '获取玩家数据时发生未知错误，请稍后重试！'
 		}
 
-	async def get_mc_data(self, uid) -> dict:
+	async def get_mc_data(self, uid: str) -> dict:
 		"""获取玩家minecraft信息"""
 		for attempt in range(3):
 			try:
 				async with (
 					httpx.AsyncClient() as client
 				):
-					res = await client.get(
-						self.mojang_profile + uid,
-						timeout=10,
+					res: httpx.Response = (
+						await client.get(
+							self.mojang_profile
+							+ uid,
+							timeout=10,
+						)
 					)
 					if res.status_code == 200:
 						return res.json()
@@ -193,13 +197,177 @@ class Api:
 			'e': '获取玩家数据时发生未知错误，请稍后重试！'
 		}
 
+	@staticmethod
+	async def get_player_online(
+		data_b,
+	) -> Union[Literal['在线'], Literal['离线']]:
+		"""获取玩家在线状态"""
+		online: str = data_b
+		if online:
+			online = '在线'
+		else:
+			online = '离线'
+		return online
+
+	@staticmethod
+	async def get_player_rack(data_a) -> str:
+		rank_id: str = data_a.get(
+			'newPackageRank'
+		)
+		"""获取玩家rank"""
+		if rank_id == 'VIP' or rank_id == 'MVP':
+			rank = f'[{rank_id}]'
+		elif (
+			rank_id == 'VIP_PLUS'
+			or rank_id == 'MVP_PLUS'
+		):
+			rank: str = f"[{rank_id.replace('_PLUS', '+')}]"
+		return rank
+
+	@staticmethod
+	async def get_login_time(
+		player_time,
+	) -> str:
+		"""获取玩家上线时间"""
+		if player_time is not None:
+			time_array = time.localtime(
+				player_time / 1000
+			)
+			last_login: str = time.strftime(
+				'%Y-%m-%d %H:%M:%S', time_array
+			)
+		else:
+			last_login = (
+				'对方隐藏了最后的上线时间'
+			)
+		return last_login
+
+	@staticmethod
+	async def get_player_level(
+		xp: str,
+	) -> Union[int, int]:
+		"""获取玩家等级"""
+		if xp is not None:
+			prefix = -3.5
+			const = 12.25
+			divides = 0.0008
+			try:
+				lv = int(
+					(divides * int(xp) + const)
+					** 0.5
+					+ prefix
+					+ 1
+				)
+				level: int = lv
+			except ValueError:
+				level = 0
+		else:
+			level = 0
+		return level
+
+	@staticmethod
+	async def get_player_skywars_level(
+		level,
+	) -> str:
+		"""获取skywars等级"""
+		level_: str = level[
+			2:-1
+		]  # 去掉颜色代码和 '⋆'
+		return level_ + '⋆'
+
+	@staticmethod
+	async def get_hypixel_bedwars_level(
+		exp: int,
+	) -> dict:
+		"""计算 Hypixel 起床战争等级和经验进度"""
+		# 常量定义
+		LEVEL_EXP_REQUIREMENTS = [
+			500,
+			1000,
+			2000,
+			3500,
+		]  # 每个星级的经验需求
+		MAX_LEVEL_EXP = (
+			487_000  # 每轮循环需要的总经验
+		)
+		POST_3_LEVEL_EXP = (
+			5000  # 3✫之后每个等级需要的经验
+		)
+
+		# 等级与进度计算函数
+		def calculate_progress(
+			exp: int, thresholds: list
+		) -> tuple:
+			"""
+			根据经验值和经验阈值列表计算等级和经验进度
+			"""
+			level = 0
+			for req in thresholds:
+				if exp < req:
+					break
+				exp -= req
+				level += 1
+			return level, exp
+
+		# 小于 7000 的等级和进度计算
+		if exp < sum(LEVEL_EXP_REQUIREMENTS):
+			level, remaining_exp = (
+				calculate_progress(
+					exp, LEVEL_EXP_REQUIREMENTS
+				)
+			)
+			level_str = f'{level}✫'
+			next_level_exp = f'{remaining_exp}/{LEVEL_EXP_REQUIREMENTS[level]}'
+		else:
+			# 7000 以上的递增星级
+			exp -= sum(LEVEL_EXP_REQUIREMENTS)
+			if exp < MAX_LEVEL_EXP:
+				add_level: int = (
+					exp // POST_3_LEVEL_EXP
+				)
+				remaining_exp: int = (
+					exp % POST_3_LEVEL_EXP
+				)
+				level: int = 4 + add_level
+				level_str = f'{level}✫'
+				next_level_exp: str = f'{remaining_exp}/{POST_3_LEVEL_EXP}'
+			else:
+				# 超过 MAX_LEVEL_EXP 的特殊循环处理
+				loop_count: int = (
+					exp // MAX_LEVEL_EXP
+				)  # 计算循环次数
+				surplus_exp: int = (
+					exp % MAX_LEVEL_EXP
+				)  # 当前循环内的剩余经验
+				base_level: int = (
+					loop_count * 100
+				)  # 每轮加 100 星
+				loop_level, remaining_exp = (
+					calculate_progress(
+						surplus_exp,
+						LEVEL_EXP_REQUIREMENTS
+						+ [POST_3_LEVEL_EXP]
+						* 100,
+					)
+				)
+				level_str: str = (
+					f'{base_level + loop_level}✫'
+				)
+				next_level_exp = f'{remaining_exp}/{POST_3_LEVEL_EXP if loop_level >= 4 else LEVEL_EXP_REQUIREMENTS[loop_level]}'
+
+		return {
+			'bw_level': level_str,
+			'bw_experience': next_level_exp,
+		}
+
 	async def get_hypixel_data(
 		self, data_a
 	) -> dict:
+		"""获取hypixel基本信息"""
 		fields = {
 			'karma': data_a.get('karma'),
 			'rank': await self.get_player_rack(
-				data_a.get('newPackageRank')
+				data_a
 			),
 			'first_login': await self.get_login_time(
 				data_a.get('firstLogin')
@@ -244,76 +412,10 @@ class Api:
 
 		return fields
 
-	@staticmethod
-	async def get_player_online(
-		data_b,
-	) -> Union[Literal['在线'], Literal['离线']]:
-		"""获取玩家在线状态"""
-		online = data_b
-		if online:
-			online = '在线'
-		else:
-			online = '离线'
-		return online
-
-	@staticmethod
-	async def get_player_rack(
-		rank_id,
-	) -> str:
-		"""获取玩家rank"""
-		if rank_id == 'VIP' or rank_id == 'MVP':
-			rank = f'[{rank_id}]'
-		elif (
-			rank_id == 'VIP_PLUS'
-			or rank_id == 'MVP_PLUS'
-		):
-			rank: str = f"[{rank_id.replace('_PLUS', '+')}]"
-		return rank
-
-	@staticmethod
-	async def get_login_time(
-		player_time,
-	) -> str:
-		"""获取玩家上线时间"""
-		if player_time is not None:
-			time_array = time.localtime(
-				player_time / 1000
-			)
-			last_login: str = time.strftime(
-				'%Y-%m-%d %H:%M:%S', time_array
-			)
-		else:
-			last_login = (
-				'对方隐藏了最后的上线时间'
-			)
-		return last_login
-
-	@staticmethod
-	async def get_player_level(
-		xp,
-	) -> Union[int, None]:
-		"""获取玩家等级"""
-		if xp is not None:
-			prefix = -3.5
-			const = 12.25
-			divides = 0.0008
-			try:
-				lv = int(
-					(divides * int(xp) + const)
-					** 0.5
-					+ prefix
-					+ 1
-				)
-				level = lv
-			except ValueError:
-				level = None
-		else:
-			level = None
-		return level
-
 	async def get_players_skywars(
 		self, data_a
 	) -> dict:
+		"""获取Skywars数据"""
 		stats_data = data_a.get('stats')
 		if not stats_data:
 			logger.error('Stats 数据不存在')
@@ -387,103 +489,10 @@ class Api:
 
 		return fields
 
-	@staticmethod
-	async def get_player_skywars_level(
-		level,
-	) -> str:
-		level_ = level[2:-1]  # 去掉颜色代码和 '⋆'
-		return level_ + '⋆'
-
-	@staticmethod
-	async def get_hypixel_bedwars_level(
-		exp: int,
-	) -> dict:
-		"""
-		计算 Hypixel 起床战争等级和经验进度
-		"""
-		# 常量定义
-		LEVEL_EXP_REQUIREMENTS = [
-			500,
-			1000,
-			2000,
-			3500,
-		]  # 每个星级的经验需求
-		MAX_LEVEL_EXP = (
-			487_000  # 每轮循环需要的总经验
-		)
-		POST_3_LEVEL_EXP = (
-			5000  # 3✫之后每个等级需要的经验
-		)
-
-		# 等级与进度计算函数
-		def calculate_progress(
-			exp: int, thresholds: list
-		) -> tuple:
-			"""
-			根据经验值和经验阈值列表计算等级和经验进度
-			"""
-			level = 0
-			for req in thresholds:
-				if exp < req:
-					break
-				exp -= req
-				level += 1
-			return level, exp
-
-		# 小于 7000 的等级和进度计算
-		if exp < sum(LEVEL_EXP_REQUIREMENTS):
-			level, remaining_exp = (
-				calculate_progress(
-					exp, LEVEL_EXP_REQUIREMENTS
-				)
-			)
-			level_str = f'{level}✫'
-			next_level_exp = f'{remaining_exp}/{LEVEL_EXP_REQUIREMENTS[level]}'
-		else:
-			# 7000 以上的递增星级
-			exp -= sum(LEVEL_EXP_REQUIREMENTS)
-			if exp < MAX_LEVEL_EXP:
-				add_level = (
-					exp // POST_3_LEVEL_EXP
-				)
-				remaining_exp = (
-					exp % POST_3_LEVEL_EXP
-				)
-				level = 4 + add_level
-				level_str = f'{level}✫'
-				next_level_exp = f'{remaining_exp}/{POST_3_LEVEL_EXP}'
-			else:
-				# 超过 MAX_LEVEL_EXP 的特殊循环处理
-				loop_count = (
-					exp // MAX_LEVEL_EXP
-				)  # 计算循环次数
-				surplus_exp = (
-					exp % MAX_LEVEL_EXP
-				)  # 当前循环内的剩余经验
-				base_level = (
-					loop_count * 100
-				)  # 每轮加 100 星
-				loop_level, remaining_exp = (
-					calculate_progress(
-						surplus_exp,
-						LEVEL_EXP_REQUIREMENTS
-						+ [POST_3_LEVEL_EXP]
-						* 100,
-					)
-				)
-				level_str = (
-					f'{base_level + loop_level}✫'
-				)
-				next_level_exp = f'{remaining_exp}/{POST_3_LEVEL_EXP if loop_level >= 4 else LEVEL_EXP_REQUIREMENTS[loop_level]}'
-
-		return {
-			'bw_level': level_str,
-			'bw_experience': next_level_exp,
-		}
-
 	async def get_players_bedwars(
 		self, data_a
 	) -> dict:
+		"""获取bedwars数据"""
 		stats_data = data_a.get('stats')
 		if not stats_data:
 			logger.error('Stats 数据不存在')

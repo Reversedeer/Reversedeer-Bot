@@ -32,6 +32,7 @@ class Utils:
             指令9：重启
             指令10：event配置"""
 		self.notAllow = '功能未开启'
+		self.release_url = 'https://api.github.com/repos/Reversedeer/nonebot_plugin_eventmonitor/releases/latest'
 		self.path = {
 			'chuo': ['戳一戳'],
 			'honor': ['群荣誉检测'],

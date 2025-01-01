@@ -1,12 +1,8 @@
 """入口文件"""
 
-import os
-import platform
-import contextlib
-
-from nonebot.params import ArgStr
 from nonebot import get_driver, require
 from nonebot.permission import SUPERUSER
+from nonebot.plugin import PluginMetadata
 from nonebot.plugin import on_notice, on_command
 from nonebot_plugin_apscheduler import scheduler
 from nonebot.adapters.onebot.v11.permission import (
@@ -15,13 +11,12 @@ from nonebot.adapters.onebot.v11.permission import (
 )
 
 from .utils import utils
-from .update import update
 from .handle import eventmonitor
 
 require('nonebot_plugin_apscheduler')
 
 scheduler.add_job(
-	update.auto_check_bot_update,
+	eventmonitor.auto_check_bot_update,
 	'cron',
 	hour=8,
 	misfire_grace_time=600,
@@ -35,7 +30,7 @@ driver = get_driver()
 async def _() -> None:
 	await utils.init()
 	await utils.config_check()
-	await update.auto_check()
+	await eventmonitor.auto_check()
 
 
 # 戳一戳
@@ -111,7 +106,7 @@ on_command(
 )
 
 on_command(
-	'更新插件eventmonitor',
+	'检查event',
 	priority=1,
 	permission=SUPERUSER,
 	block=False,
@@ -126,55 +121,17 @@ on_command(
 	handlers=[eventmonitor.usage],
 )
 
-restart = on_command(
-	'重启',
-	aliases={'restart'},
-	priority=1,
-	permission=SUPERUSER,
-	block=True,
+
+__plugin_meta__ = PluginMetadata(
+	name='eventmonitor',
+	description='监控群事件的插件，支持戳一戳，成员变动，群荣誉变化等提示的插件',
+	usage=utils.usage,
+	type='application',
+	homepage='https://github.com/Reversedeer/nonebot_plugin_eventmonitor',
+	supported_adapters={'onebot.v11'},
+	extra={
+		'author': 'Reversedeer',
+		'version': '0.3.2',
+		'priority': 50,
+	},
 )
-
-
-@restart.got(
-	'flag',
-	prompt='确定是否重启？确定请回复[是|好|确定]（重启失败咱们将失去联系，请谨慎！)',
-)
-async def _(flag: str = ArgStr('flag')) -> None:
-	if flag.lower() in {
-		'true',
-		'是',
-		'好',
-		'确定',
-	}:
-		await restart.send('开始重启..请稍等...')
-		open('data/eventmonitor/new_version', 'w')
-		if (
-			str(platform.system()).lower()
-			== 'windows'
-		):
-			import sys
-
-			python = sys.executable
-			os.execl(python, python, *sys.argv)
-		else:
-			os.system('./restart.sh')
-	else:
-		await restart.send('已取消操作...')
-
-
-with contextlib.suppress(Exception):
-	from nonebot.plugin import PluginMetadata
-
-	__plugin_meta__ = PluginMetadata(
-		name='eventmonitor',
-		description='监控群事件的插件，支持戳一戳，成员变动，群荣誉变化等提示的插件',
-		usage=utils.usage,
-		type='application',
-		homepage='https://github.com/Reversedeer/nonebot_plugin_eventmonitor',
-		supported_adapters={'onebot.v11'},
-		extra={
-			'author': 'Reversedeer',
-			'version': '0.3.2',
-			'priority': 50,
-		},
-	)

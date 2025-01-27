@@ -93,7 +93,7 @@ on_command(
 
 on_command(
     'eventstatus',
-    aliases={'event 配置'},
+    aliases={'event配置'},
     permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER,
     priority=10,
     block=True,
@@ -102,6 +102,7 @@ on_command(
 
 on_command(
     '检查event更新',
+    aliases={'checkeventupdate'},
     priority=1,
     permission=SUPERUSER,
     block=False,
@@ -109,7 +110,7 @@ on_command(
 )
 
 on_command(
-    'event指令帮助',
+    'event帮助',
     aliases={'eventhelp'},
     priority=20,
     block=True,

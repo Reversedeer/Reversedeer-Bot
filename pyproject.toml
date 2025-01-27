@@ -74,6 +74,7 @@ ignore = [
     "E501",   #过长的行由ruff format处理,剩余的都是字符串
     "ANN202", #向NoneBot注册的函数
     "TRY003",
+    "TC003",  #Path
     "COM812", #强制尾随逗号
     "TID252", #相对导入
     "ISC001", # format warning

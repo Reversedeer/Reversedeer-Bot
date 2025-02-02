@@ -1,14 +1,15 @@
 from .config import config_data
 
+nickname: str = next(iter(config_data.nickname), 'Bot')
 chuo_msg = [
-    f'别戳了，{config_data.nickname}怕疼QwQ',
-    f'呜呜，再戳{config_data.nickname}脸都要肿了',
-    f'戳坏了{config_data.nickname}，你赔得起吗？',
-    f'再戳{config_data.nickname}，我要叫我主人了',
-    f'别老戳{config_data.nickname}了，您歇会吧~',
-    f'再戳{config_data.nickname}，咬你了嗷~',
-    f'请不要戳{config_data.nickname} >_<',
-    f'喂(#`O′) 戳{config_data.nickname}干嘛！',
+    f'别戳了，{nickname}怕疼QwQ',
+    f'呜呜，再戳{nickname}脸都要肿了',
+    f'戳坏了{nickname}，你赔得起吗？',
+    f'再戳{nickname}，我要叫我主人了',
+    f'别老戳{nickname}了，您歇会吧~',
+    f'再戳{nickname}，咬你了嗷~',
+    f'请不要戳{nickname} >_<',
+    f'喂(#`O′) 戳{nickname}干嘛！',
     '想好了再戳，(*-`ω´-)✄',
     '喂，110吗，有人老戳我',
     '嗷呜嗷呜...恶龙咆哮┗|｀O′|┛',
